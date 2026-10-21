@@ -53,22 +53,3 @@ src/
 **Built for the field.** One section on screen at a time with progress per tab, 56 dp+ targets, Yes/No and options as large buttons, a one-tap "Today" on dates, − / + on counts, a problem list that jumps to the field, Save / Complete always at the bottom, and an "offline ready" + save-status chip so the worker knows the data is safe.
 
 **History.** The app always opens straight into the current form. The History button in the header lists every form stored on the phone (draft / saved / complete) with its progress; tapping one shows what was entered and which photos are missing. Unfinished forms can be continued; completed ones are read-only. Switching forms writes the previous one to SQLite first, so nothing waiting on the autosave debounce is lost.
-
-**Inspecting the database (iOS simulator):**
-
-```bash
-DB="$(xcrun simctl get_app_container booted com.georgejose.sitecommissioning data)/Documents/SQLite/commissioning.db"
-sqlite3 -readonly "$DB" "SELECT id, status, updated_at FROM drafts ORDER BY updated_at DESC;"
-```
-
-## Assumptions (defaults I'd confirm with the team)
-
-1. **Save vs autosave.** Every keystroke autosaves as a draft. The explicit **Save** is a validated commit: it is blocked while any rule is broken (or a value is invalid, e.g. panels = 0). Empty required fields do **not** block Save, so a half-finished form can be saved. **Mark complete** additionally needs every visible required field and every visible photo slot.
-2. **Hidden values** (Earthing → No, ESS 5 → 2) stay in the draft so toggling back restores them, but they are stripped from the saved record and are not validated.
-3. **Required:** all visible fields except the computed one.
-4. **"Future"** means after the device's local date (Asia/Manila on site). Dates are stored and compared as `YYYY-MM-DD` strings, never through `new Date(str)` (UTC).
-5. Number of Solar Panels must be a whole number ≥ 1.
-
-## One thing the AI got wrong
-
-The first version of the text inputs was **controlled** (`value={storeValue}`), which is the usual React pattern. On the Android emulator, typing "BYD" into an ESS Make field produced "BBYDO". Every keystroke round-trips through JS (store update → whole-form evaluation → re-render → native input), and fast input races that round trip. On a low-end phone the same thing happens with a real keyboard. Fix: text and number inputs are uncontrolled (`defaultValue`). The native input owns the keystrokes, the store just records them, and the input is keyed by draft id so a new form starts empty. Re-tested: "LGCHEM" typed cleanly.
