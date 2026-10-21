@@ -1,0 +1,144 @@
+{
+  "formId": "site_commissioning",
+  "version": "1.0.0",
+  "schemaVersion": 1,
+  "title": "Site Commissioning",
+  "photoSectionTitle": "C — Photos",
+  "sections": [
+    {
+      "id": "construction",
+      "title": "A — Construction",
+      "fields": [
+        { "id": "contractorMobilisedDate", "type": "date", "label": "Contractor Mobilised date", "required": true },
+        { "id": "foundationStart", "type": "date", "label": "Solar Foundation — start date", "required": true },
+        { "id": "foundationEnd", "type": "date", "label": "Solar Foundation — end date", "required": true },
+        { "id": "earthingWorks", "type": "yesno", "label": "Earthing Works", "required": true },
+        {
+          "id": "earthingType",
+          "type": "select",
+          "label": "Type of Earthing",
+          "required": true,
+          "options": ["Chemical", "Pipe", "Spike"],
+          "visibleWhen": { "==": [{ "var": "earthingWorks" }, true] }
+        },
+        {
+          "id": "earthingNos",
+          "type": "select",
+          "label": "Earthing Nos",
+          "required": true,
+          "options": [1, 2, 3],
+          "visibleWhen": { "==": [{ "var": "earthingWorks" }, true] }
+        }
+      ]
+    },
+    {
+      "id": "utility",
+      "title": "B — Utility Installation",
+      "fields": [
+        { "id": "ess", "type": "yesno", "label": "ESS", "required": true },
+        {
+          "id": "essCount",
+          "type": "select",
+          "label": "No of ESS Installed",
+          "required": true,
+          "options": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+          "visibleWhen": { "==": [{ "var": "ess" }, true] }
+        },
+        {
+          "id": "essUnits",
+          "type": "repeater",
+          "label": "ESS Units",
+          "itemLabel": "ESS Unit {n}",
+          "count": { "var": "essCount" },
+          "visibleWhen": { "==": [{ "var": "ess" }, true] },
+          "fields": [
+            { "id": "make", "type": "text", "label": "Make", "required": true },
+            { "id": "serialNo", "type": "text", "label": "Serial No", "required": true }
+          ]
+        },
+        {
+          "id": "panelCapacity",
+          "type": "select",
+          "label": "Panel Capacity",
+          "unit": "W",
+          "required": true,
+          "options": [575, 580, 585, 590, 600]
+        },
+        {
+          "id": "panelCount",
+          "type": "number",
+          "label": "Number of Solar Panels",
+          "required": true,
+          "integer": true,
+          "min": 1
+        },
+        {
+          "id": "pvCapacity",
+          "type": "computed",
+          "label": "Solar PV Capacity",
+          "unit": "kW",
+          "help": "Panel Capacity × Number of Solar Panels ÷ 1000",
+          "expr": { "round": [{ "/": [{ "*": [{ "var": "panelCapacity" }, { "var": "panelCount" }] }, 1000] }, 2] }
+        }
+      ]
+    }
+  ],
+  "photoGroups": [
+    {
+      "id": "foundation",
+      "label": "Foundation",
+      "slots": [
+        { "id": "excavation", "label": "Excavation" },
+        { "id": "steelBinding", "label": "Steel Binding" },
+        { "id": "raftColumn", "label": "Raft / Column" },
+        { "id": "boltsPedestal", "label": "Bolts / Pedestal" }
+      ]
+    },
+    {
+      "id": "structure",
+      "label": "Structure",
+      "slots": [
+        { "id": "front", "label": "Front" },
+        { "id": "side", "label": "Side" }
+      ]
+    },
+    {
+      "id": "earthing",
+      "label": "Earthing",
+      "visibleWhen": { "==": [{ "var": "earthingWorks" }, true] },
+      "repeat": { "count": { "var": "earthingNos" }, "idTemplate": "ep{n}", "labelTemplate": "EP{n}" }
+    }
+  ],
+  "rules": [
+    {
+      "id": "mobilised_not_future",
+      "field": "contractorMobilisedDate",
+      "assert": { "<=": [{ "var": "contractorMobilisedDate" }, { "var": "$today" }] },
+      "message": "Contractor Mobilised date cannot be in the future"
+    },
+    {
+      "id": "start_not_future",
+      "field": "foundationStart",
+      "assert": { "<=": [{ "var": "foundationStart" }, { "var": "$today" }] },
+      "message": "Foundation start date cannot be in the future"
+    },
+    {
+      "id": "end_not_future",
+      "field": "foundationEnd",
+      "assert": { "<=": [{ "var": "foundationEnd" }, { "var": "$today" }] },
+      "message": "Foundation end date cannot be in the future"
+    },
+    {
+      "id": "end_after_start",
+      "field": "foundationEnd",
+      "assert": { ">=": [{ "var": "foundationEnd" }, { "var": "foundationStart" }] },
+      "message": "Foundation end date cannot be earlier than its start date"
+    },
+    {
+      "id": "start_after_mobilised",
+      "field": "foundationStart",
+      "assert": { ">=": [{ "var": "foundationStart" }, { "var": "contractorMobilisedDate" }] },
+      "message": "Foundation start date cannot be earlier than Contractor Mobilised date"
+    }
+  ]
+}
