@@ -23,10 +23,24 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-sqlite", "@react-native-community/datetimepicker", "expo-router"],
+    "plugins": [
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      "expo-router"
+    ],
     "scheme": "sitecommissioning",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "aaac9336-22a9-4d9f-a4f5-a4645745b0ff"
+      }
     }
   }
 }
