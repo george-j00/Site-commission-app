@@ -24,12 +24,14 @@ src/
   app/                          Expo Router — routes only
     _layout.tsx                   providers, startup (DB + definition + draft), ErrorBoundary
     index.tsx                     the form route
+    history/index.tsx, [id].tsx   list of every form on the phone, and one form's details
   features/commissioning-form/  React layer
     components/                   FormScreen (composition only), Header, SectionTabs, ProblemSheet,
                                   ActionBar, FieldRenderer (field type → component registry), fields/*, photos/*
     hooks/                        useFormEvaluation, useVisibleErrors, useSectionProgress, useProblems,
                                   useScrollToField, useToast, useKeyboardVisible, useField
     store/                        formStore (zustand, per-field selectors), autosave (debounce + background flush)
+  features/form-history/        History: list drafts / saved / complete, view details, "Continue editing"
   data/                         persistence — the only code that writes SQL
     db/client.ts                  expo-sqlite connection + versioned migrations (PRAGMA user_version)
     repositories/                 draftRepository, definitionRepository (cached > bundled; refresh() stub)
@@ -49,6 +51,8 @@ src/
 **Durability.** Every change goes to the zustand store and on to SQLite through `draftRepository` (300 ms debounce, plus an immediate flush when the app leaves the foreground: on Android you must leave the app before you can swipe it away). Each draft has a device-generated UUID. A sync outbox would sit behind the same repository, and that UUID becomes the idempotency key, so a retried sync can't create a duplicate record.
 
 **Built for the field.** One section on screen at a time with progress per tab, 56 dp+ targets, Yes/No and options as large buttons, a one-tap "Today" on dates, − / + on counts, a problem list that jumps to the field, Save / Complete always at the bottom, and an "offline ready" + save-status chip so the worker knows the data is safe.
+
+**History.** The app always opens straight into the current form. The History button in the header lists every form stored on the phone (draft / saved / complete) with its progress; tapping one shows what was entered and which photos are missing. Unfinished forms can be continued; completed ones are read-only. Switching forms writes the previous one to SQLite first, so nothing waiting on the autosave debounce is lost.
 
 **Inspecting the database (iOS simulator):**
 

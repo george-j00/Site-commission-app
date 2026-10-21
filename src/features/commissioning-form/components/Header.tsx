@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon, IconName } from '@/shared/components/Icon';
 import { colors, size } from '@/shared/theme';
 
@@ -10,11 +10,13 @@ export function Header({
   status,
   progress,
   version,
+  onHistory,
 }: {
   title: string;
   status: Status;
   progress: number;
   version: string;
+  onHistory: () => void;
 }) {
   const pct = Math.round(progress * 100);
   return (
@@ -23,17 +25,25 @@ export function Header({
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
-        <View style={styles.offline} accessibilityLabel="Works without signal">
-          <Icon name="cloud-offline-outline" size={16} color={colors.headerMuted} />
-          <Text style={styles.offlineText}>Offline ready</Text>
-        </View>
+        <Pressable
+          onPress={onHistory}
+          accessibilityRole="button"
+          accessibilityLabel="History: see all forms on this phone"
+          style={({ pressed }) => [styles.history, pressed && { backgroundColor: '#334155' }]}
+        >
+          <Icon name="time-outline" size={20} color={colors.headerText} />
+          <Text style={styles.historyText}>History</Text>
+        </Pressable>
       </View>
       <View style={styles.row}>
         <View style={[styles.chip, status.tone === 'ok' && styles.chipOk]}>
           <Icon name={status.icon} size={16} color={status.tone === 'ok' ? '#86EFAC' : colors.headerMuted} />
           <Text style={[styles.chipText, status.tone === 'ok' && { color: '#86EFAC' }]}>{status.text}</Text>
         </View>
-        <Text style={styles.version}>v{version}</Text>
+        <View style={styles.offline} accessibilityLabel="Works without signal">
+          <Icon name="cloud-offline-outline" size={16} color={colors.headerMuted} />
+          <Text style={styles.offlineText}>Offline ready · v{version}</Text>
+        </View>
       </View>
       <View style={styles.progressRow} accessibilityLabel={`${pct} percent complete`}>
         <View style={styles.track}>
@@ -62,7 +72,18 @@ const styles = StyleSheet.create({
   },
   chipOk: { backgroundColor: '#14532D' },
   chipText: { color: colors.headerMuted, fontSize: size.small - 1, fontWeight: '700' },
-  version: { color: '#64748B', fontSize: 12, fontWeight: '600' },
+  history: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 44,
+    paddingHorizontal: 12,
+    borderRadius: 22,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  historyText: { color: colors.headerText, fontSize: size.small, fontWeight: '800' },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   track: { flex: 1, height: 8, borderRadius: 4, backgroundColor: '#334155', overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4, backgroundColor: '#60A5FA' },

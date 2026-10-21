@@ -2,27 +2,12 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { localToday } from '@/core/form-engine/form';
+import { formatYmd as friendly, ymdToLocalDate as toLocalDate } from '@/shared/format';
 import { FieldShell } from '../FieldShell';
 import { Icon } from '@/shared/components/Icon';
 import { colors, size } from '@/shared/theme';
 import { fieldStyles as s, FieldProps } from './common';
 import { useField } from '@/features/commissioning-form/hooks/useField';
-
-/** "2026-10-19" → local Date. new Date("2026-10-19") would parse as UTC midnight. */
-function toLocalDate(ymd: string): Date {
-  const [y, m, d] = ymd.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
-
-/** "2026-10-19" → "Mon, 19 Oct 2026" for reading on site; storage stays YYYY-MM-DD. */
-function friendly(ymd: string): string {
-  return toLocalDate(ymd).toLocaleDateString(undefined, {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-}
 
 /**
  * Stored as YYYY-MM-DD so rules compare dates as plain strings with no
@@ -58,16 +43,19 @@ export function DateField({ field, path, error, nested }: FieldProps) {
           s.input,
           styles.button,
           error ? s.inputError : null,
+          // While the picker is open the box is highlighted and the chevron points up (tap again to close).
+          open && { borderColor: colors.primary, backgroundColor: colors.primarySoft },
           pressed && { backgroundColor: colors.primarySoft },
         ]}
         accessibilityRole="button"
-        accessibilityLabel={`${field.label}: ${current ? friendly(current) : 'not set'}. Tap to choose a date`}
+        accessibilityState={{ expanded: open }}
+        accessibilityLabel={`${field.label}: ${current ? friendly(current) : 'not set'}. ${open ? 'Tap to close the calendar' : 'Tap to choose a date'}`}
       >
-        <Icon name="calendar-outline" size={24} color={current ? colors.primary : colors.subtle} />
+        <Icon name="calendar-outline" size={24} color={current || open ? colors.primary : colors.subtle} />
         <Text style={[current ? s.inputText : s.placeholder, { flex: 1 }]}>
           {current ? friendly(current) : 'Select date'}
         </Text>
-        <Icon name="chevron-down" size={20} color={colors.muted} />
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={20} color={open ? colors.primary : colors.muted} />
       </Pressable>
       {!readOnly ? (
         <View style={styles.quick}>

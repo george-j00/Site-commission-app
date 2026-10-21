@@ -26,6 +26,8 @@ type FormState = {
   save: () => Evaluation;
   complete: () => Evaluation;
   newForm: () => void;
+  /** Switch to another stored form (from history) to continue it. */
+  openDraft: (id: string) => boolean;
 };
 
 /**
@@ -34,6 +36,11 @@ type FormState = {
  */
 export function evaluateDraft(def: FormDefinition, draft: Draft, today = localToday()): Evaluation {
   return evaluateForm(def, draft.values, draft.photos, today);
+}
+
+/** Nothing entered yet: no values, no photos, never saved. */
+export function isBlankDraft(d: Draft): boolean {
+  return d.status === 'draft' && !d.saved && Object.keys(d.values).length === 0 && Object.keys(d.photos).length === 0;
 }
 
 function newDraft(def: FormDefinition): Draft {
@@ -111,6 +118,18 @@ export const useFormStore = create<FormState>((set, get) => {
     save: () => commit('saved', (ev) => ev.canSave),
     // Complete = also needs every required field and every visible photo slot.
     complete: () => commit('complete', (ev) => ev.canComplete),
+
+    openDraft(id) {
+      if (get().draft?.id === id) return true;
+      const d = draftRepository.get(id);
+      if (!d) return false;
+      // Keep the version it was started on; fall back to the newest if that version is gone.
+      const def =
+        definitionRepository.getDefinitionVersion(d.formId, d.formVersion) ??
+        definitionRepository.getDefinition(d.formId);
+      set({ def, draft: d, restored: false, touched: {}, showAllErrors: false });
+      return true;
+    },
 
     newForm() {
       // New forms always use the newest definition.

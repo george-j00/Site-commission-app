@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useFormEvaluation } from '../hooks/useFormEvaluation';
@@ -18,9 +19,8 @@ import { ProblemBanner } from './ProblemBanner';
 import { ProblemSheet } from './ProblemSheet';
 import { SectionTabs } from './SectionTabs';
 import { ToastView } from './ToastView';
+import { formatTime as time } from '@/shared/format';
 import { colors } from '@/shared/theme';
-
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 /**
  * Composes the form: header, section tabs, the active section's fields,
@@ -69,10 +69,6 @@ export function FormScreen() {
     show('Form completed');
     scrollToTop();
   };
-  const onNewForm = () => {
-    newForm();
-    selectSection(tabs[0]?.id ?? PHOTOS_TAB);
-  };
 
   const isComplete = draft.status === 'complete';
   const status: Status = isComplete
@@ -91,7 +87,13 @@ export function FormScreen() {
   return (
     <ScrollTargetsContext.Provider value={scrollTargets}>
       <View style={styles.screen}>
-        <Header title={def.title ?? def.formId} status={status} progress={progress} version={def.version} />
+        <Header
+          title={def.title ?? def.formId}
+          status={status}
+          progress={progress}
+          version={def.version}
+          onHistory={() => router.push('/history')}
+        />
         <SectionTabs tabs={tabs} active={active} onSelect={selectSection} />
         {problems.length > 0 && !isComplete ? (
           <ProblemBanner count={problems.length} onPress={() => setSheetOpen(true)} />
@@ -139,7 +141,7 @@ export function FormScreen() {
         {!keyboardOpen ? (
           <ActionBar>
             {isComplete ? (
-              <Button label="Start new form" icon="add-circle-outline" onPress={onNewForm} flex={1} />
+              <Button label="Start new form" icon="add-circle-outline" onPress={newForm} flex={1} />
             ) : (
               <>
                 <Button label="Save" icon="save-outline" variant="secondary" onPress={onSave} flex={1} />

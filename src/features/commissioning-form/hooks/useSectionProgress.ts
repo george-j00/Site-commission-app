@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import type { Evaluation } from '@/core/form-engine/form';
-import { getIn, isEmpty } from '@/core/form-engine/paths';
-import type { ResolvedField } from '@/core/form-engine/resolve';
+import { isFieldDone, leafFields } from '@/core/form-engine/progress';
 import type { FormError } from '@/core/form-engine/validate';
 import { useFormStore } from '../store/formStore';
 
@@ -9,13 +8,6 @@ import { useFormStore } from '../store/formStore';
 export const PHOTOS_TAB = '__photos';
 
 export type SectionTab = { id: string; title: string; done: number; total: number; problems: number };
-
-/** Fillable leaf fields of a section (repeater rows flattened, computed fields excluded). */
-function leaves(fields: ResolvedField[]): ResolvedField[] {
-  return fields.flatMap((f) =>
-    f.rows ? f.rows.flatMap((r) => leaves(r.fields)) : f.def.type === 'computed' ? [] : [f],
-  );
-}
 
 /** Per-section "done / total / problems" for the tabs, plus overall progress for the header. */
 export function useSectionProgress(ev: Evaluation, shown: FormError[], showAll: boolean) {
@@ -26,12 +18,12 @@ export function useSectionProgress(ev: Evaluation, shown: FormError[], showAll: 
   const tabs = useMemo(() => {
     const anyError = new Set(ev.errors.map((e) => e.path));
     const t: SectionTab[] = ev.sections.map((s) => {
-      const l = leaves(s.fields);
+      const l = leafFields(s.fields);
       return {
         id: s.def.id,
         title: s.def.title,
         total: l.length,
-        done: l.filter((f) => !isEmpty(getIn(values, f.path)) && !anyError.has(f.path)).length,
+        done: l.filter((f) => isFieldDone(f, values, anyError)).length,
         problems: shown.filter((e) => e.sectionId === s.def.id).length,
       };
     });

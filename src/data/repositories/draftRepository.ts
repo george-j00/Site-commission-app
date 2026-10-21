@@ -24,6 +24,9 @@ export interface DraftRepository {
   save(draft: Draft): void;
   /** Most recent form that isn't finished yet — what the app reopens on. */
   loadOpen(formId: string): Draft | null;
+  /** Every form on this phone, newest first (history screen). */
+  list(formId: string): Draft[];
+  get(id: string): Draft | null;
 }
 
 export const draftRepository: DraftRepository = {
@@ -47,6 +50,20 @@ export const draftRepository: DraftRepository = {
       `SELECT data_json FROM drafts WHERE form_id = ? AND status != 'complete' ORDER BY updated_at DESC LIMIT 1`,
       formId,
     );
+    return row ? (JSON.parse(row.data_json) as Draft) : null;
+  },
+
+  list(formId) {
+    return getDb()
+      .getAllSync<{ data_json: string }>(
+        `SELECT data_json FROM drafts WHERE form_id = ? ORDER BY updated_at DESC`,
+        formId,
+      )
+      .map((r) => JSON.parse(r.data_json) as Draft);
+  },
+
+  get(id) {
+    const row = getDb().getFirstSync<{ data_json: string }>(`SELECT data_json FROM drafts WHERE id = ?`, id);
     return row ? (JSON.parse(row.data_json) as Draft) : null;
   },
 };

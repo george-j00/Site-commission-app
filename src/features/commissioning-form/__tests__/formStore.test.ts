@@ -1,5 +1,5 @@
 import type { Draft } from '@/data/repositories/draftRepository';
-import { useFormStore } from '../store/formStore';
+import { isBlankDraft, useFormStore } from '../store/formStore';
 
 // jest.mock calls below are hoisted above these imports by babel-jest.
 
@@ -9,6 +9,7 @@ jest.mock('@/data/repositories/draftRepository', () => ({
   draftRepository: {
     save: (d: Draft) => mockSaved.set(d.id, d),
     loadOpen: () => [...mockSaved.values()].find((d) => d.status !== 'complete') ?? null,
+    get: (id: string) => mockSaved.get(id) ?? null,
   },
 }));
 jest.mock('@/data/repositories/definitionRepository', () => {
@@ -133,5 +134,57 @@ describe('formStore', () => {
     store().newForm();
     expect(store().draft!.id).not.toBe(first);
     expect(store().draft!.values).toEqual({});
+  });
+
+  it('openDraft switches to a stored form so it can be continued', () => {
+    store().init('site_commissioning');
+    store().setValue('panelCount', 5);
+    const first = store().draft!;
+    mockSaved.set(first.id, first);
+    store().newForm();
+    store().setValue('panelCount', 9);
+
+    expect(store().openDraft(first.id)).toBe(true);
+    expect(store().draft!.id).toBe(first.id);
+    expect(store().draft!.values.panelCount).toBe(5);
+    expect(store().showAllErrors).toBe(false);
+    expect(store().openDraft('nope')).toBe(false);
+  });
+});
+
+describe('isBlankDraft', () => {
+  it('is true only for an untouched, never-saved draft', () => {
+    store().init('site_commissioning');
+    expect(isBlankDraft(store().draft!)).toBe(true);
+    store().setPhoto('front', true);
+    expect(isBlankDraft(store().draft!)).toBe(false);
+    store().newForm();
+    store().save();
+    expect(isBlankDraft(store().draft!)).toBe(false);
+  });
+});
+
+describe('autosave', () => {
+  it('writes the previous form before switching, even mid-debounce', () => {
+    jest.useFakeTimers();
+    const { startAutosave } = jest.requireActual('../store/autosave');
+    const repo = jest.requireMock('@/data/repositories/draftRepository').draftRepository;
+    const writes: Draft[] = [];
+    const origSave = repo.save;
+    repo.save = (d: Draft) => {
+      writes.push(d);
+      origSave(d);
+    };
+
+    store().init('site_commissioning');
+    const stop = startAutosave();
+    const firstId = store().draft!.id;
+    store().setValue('panelCount', 42); // still waiting on the 300 ms debounce
+    store().newForm(); // switch before it fires
+
+    expect(writes.find((d) => d.id === firstId)?.values.panelCount).toBe(42);
+    stop();
+    repo.save = origSave;
+    jest.useRealTimers();
   });
 });

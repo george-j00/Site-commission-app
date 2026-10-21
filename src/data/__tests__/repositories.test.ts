@@ -49,6 +49,16 @@ describe('draftRepository', () => {
     expect(drafts.loadOpen('site_commissioning')?.id).toBe('new');
   });
 
+  it('lists every form newest first, including completed ones, and gets one by id', () => {
+    const { drafts } = load();
+    drafts.save(draft({ id: 'a', updatedAt: '2026-10-18T00:00:00.000Z' }));
+    drafts.save(draft({ id: 'b', status: 'complete', updatedAt: '2026-10-20T00:00:00.000Z' }));
+    drafts.save(draft({ id: 'c', status: 'saved', updatedAt: '2026-10-19T00:00:00.000Z' }));
+    expect(drafts.list('site_commissioning').map((d) => d.id)).toEqual(['b', 'c', 'a']);
+    expect(drafts.get('c')?.status).toBe('saved');
+    expect(drafts.get('missing')).toBeNull();
+  });
+
   it('returns null when there is nothing to reopen', () => {
     expect(load().drafts.loadOpen('site_commissioning')).toBeNull();
   });
